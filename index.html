@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JEE Prep Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--card:#1a1a1a;--card2:#222;--border:#2a2a2a;
+  --accent:#6c63ff;--accent2:#8b85ff;--text:#e8e8e8;--muted:#888;--muted2:#555;
+  --r0:#ff4444;--r1:#ff7043;--r2:#ffa726;--r3:#cddc39;--r4:#66bb6a;--r5:#26a69a;
+}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+button{cursor:pointer;font-family:inherit;font-size:13px;border:none;outline:none}
+
+/* Layout */
+#app{display:flex;flex-direction:column;min-height:100vh}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:16px;height:52px;position:sticky;top:0;z-index:100}
+header h1{font-size:16px;font-weight:600;color:var(--accent2);flex:1}
+.nav-tabs{display:flex;gap:4px}
+.nav-tab{background:transparent;color:var(--muted);padding:6px 14px;border-radius:6px;font-size:13px;font-weight:500;transition:.15s}
+.nav-tab.active{background:var(--accent);color:#fff}
+.nav-tab:hover:not(.active){background:var(--card2);color:var(--text)}
+.main{flex:1;padding:20px;max-width:1100px;margin:0 auto;width:100%}
+
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:26px;font-weight:600;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:8px}
+.prog-fill{height:100%;border-radius:3px;transition:.4s}
+.subj-bars{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px}
+.subj-bars h3{font-size:13px;font-weight:500;margin-bottom:14px;color:var(--muted)}
+.subj-row{margin-bottom:12px}
+.subj-row-hd{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px}
+.mastery-dist{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:20px}
+.mastery-dist h3{font-size:13px;font-weight:500;margin-bottom:12px;color:var(--muted)}
+.dist-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.dist-dot{width:10px;height:10px;border-radius:50%}
+.dist-label{font-size:12px;color:var(--muted);width:140px}
+.dist-bar{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.dist-fill{height:100%;border-radius:4px}
+.dist-count{font-size:12px;color:var(--muted);width:32px;text-align:right}
+
+/* Chapter grid */
+.class-header{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 12px;padding-left:4px;border-left:3px solid var(--accent);padding-left:8px}
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;transition:.15s;position:relative}
+.ch-card:hover{border-color:var(--accent);background:var(--card2)}
+.ch-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.ch-name{font-size:13px;font-weight:500;line-height:1.4;flex:1}
+.ch-badges{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.badge{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500}
+.badge-pdf{background:#1a2a1a;color:#66bb6a}
+.badge-class{background:#1a1a2a;color:var(--accent2)}
+.ch-prog-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.ch-prog-bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.ch-prog-fill{height:100%;border-radius:2px;transition:.3s}
+.ch-prog-pct{font-size:11px;color:var(--muted);min-width:30px;text-align:right}
+
+/* Sidebar / Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none}
+.overlay.open{display:flex;align-items:flex-start;justify-content:flex-end}
+.sidebar{background:#141414;border-left:1px solid var(--border);width:480px;max-width:100vw;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sb-header{padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#141414;z-index:10}
+.sb-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.sb-sub{font-size:12px;color:var(--muted)}
+.sb-close{position:absolute;right:16px;top:16px;background:transparent;color:var(--muted);font-size:20px;padding:4px 8px;border-radius:4px}
+.sb-close:hover{color:var(--text);background:var(--card2)}
+.sb-body{padding:20px;flex:1}
+.sb-section{margin-bottom:24px}
+.sb-section-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.concept-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.concept-row:last-child{border-bottom:none}
+.concept-name{flex:1;font-size:13px;line-height:1.4}
+.rating-sel{display:flex;gap:3px}
+.r-btn{width:22px;height:22px;border-radius:4px;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:.1s;opacity:.4}
+.r-btn.active{opacity:1}
+.r-btn:hover{opacity:.8;transform:scale(1.1)}
+
+/* PDF section */
+.pdf-area{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn-sm{background:var(--card2);color:var(--text);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;transition:.15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent2)}
+.btn-accent{background:var(--accent);color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500}
+.btn-accent:hover{background:var(--accent2)}
+.pdf-note{font-size:11px;color:var(--muted);margin-top:6px}
+
+/* Resources */
+.res-list{list-style:none;margin-bottom:10px}
+.res-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.res-item:last-child{border-bottom:none}
+.res-icon{font-size:14px;color:var(--muted)}
+.res-label{font-size:12px;flex:1}
+.res-del{background:transparent;color:var(--muted);font-size:16px;padding:2px 6px;border-radius:4px}
+.res-del:hover{color:#ff4444;background:#2a1a1a}
+.add-res{display:flex;gap:6px;margin-top:8px}
+.add-res input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-size:12px;font-family:inherit}
+.add-res input:focus{outline:none;border-color:var(--accent)}
+.collapsible{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px}
+.collapsible .arrow{font-size:10px;transition:.2s;display:inline-block}
+.collapsible.open .arrow{transform:rotate(90deg)}
+
+/* Today's Focus */
+.focus-widget{position:fixed;bottom:20px;right:20px;z-index:300;width:280px}
+.focus-inner{background:#1a1826;border:1px solid #3d3875;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.focus-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:#1e1b30;border-bottom:1px solid #3d3875}
+.focus-header span{font-size:12px;font-weight:600;color:var(--accent2)}
+.focus-body{padding:12px;display:none}
+.focus-body.open{display:block}
+.focus-item{display:flex;align-items:center;gap:8px;padding:5px 0}
+.focus-item-text{font-size:12px;flex:1;color:var(--text)}
+.focus-item-text.empty{color:var(--muted);font-style:italic}
+.focus-unpin{background:transparent;color:var(--muted);font-size:14px;padding:2px 5px}
+.focus-unpin:hover{color:#ff4444}
+.focus-hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.4}
+.pin-btn{background:transparent;color:var(--accent2);font-size:18px;padding:2px 6px;border-radius:4px}
+.pin-btn:hover{background:#2a2050}
+.pin-btn.pinned{color:#ffa726}
+
+/* Export btn */
+.export-btn{background:var(--card2);color:var(--muted);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:12px;display:flex;align-items:center;gap:6px}
+.export-btn:hover{border-color:var(--accent);color:var(--accent2)}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>⚡ JEE Tracker</h1>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('dash')">Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('phy')">Physics</button>
+    <button class="nav-tab" onclick="switchTab('chem')">Chemistry</button>
+    <button class="nav-tab" onclick="switchTab('math')">Math</button>
+  </nav>
+  <button class="export-btn" onclick="exportProgress()">⬇ Export</button>
+</header>
+<div class="main" id="main-content"></div>
+</div>
+
+<!-- Sidebar overlay -->
+<div class="overlay" id="overlay" onclick="closeSidebar(event)">
+  <div class="sidebar" id="sidebar"></div>
+</div>
+
+<!-- Today's Focus -->
+<div class="focus-widget" id="focus-widget">
+  <div class="focus-inner">
+    <div class="focus-header" onclick="toggleFocus()">
+      <span>📌 Today's Focus</span>
+      <span id="focus-chevron">▲</span>
+    </div>
+    <div class="focus-body" id="focus-body"></div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  phy: {
+    name: "Physics",
+    color: "#6c63ff",
+    resources: [
+      {label:"HC Verma (search)",url:"https://www.google.com/search?q=HC+Verma+Concepts+of+Physics+PDF"},
+      {label:"DC Pandey",url:"https://www.google.com/search?q=DC+Pandey+physics+solutions"},
+      {label:"Vedantu Physics",url:"https://www.youtube.com/@VedantuJEE"},
+    ],
+    chapters: [
+      {id:"p1",name:"Units & Measurements",class:11,concepts:["SI units and dimensions","Dimensional analysis","Significant figures and errors","Vernier caliper and screw gauge"]},
+      {id:"p2",name:"Kinematics",class:11,concepts:["Distance vs displacement","Speed vs velocity vs acceleration","Equations of motion (1D)","Graphs: x-t, v-t, a-t — area and slope","Projectile motion","Relative motion in 1D and 2D"]},
+      {id:"p3",name:"Laws of Motion",class:11,concepts:["Newton's 3 laws — conceptual clarity","Free body diagrams (FBD)","Friction: static, kinetic, rolling","Pseudo force and non-inertial frames","Pulley systems","Constraint motion"],high:true},
+      {id:"p4",name:"Work, Energy & Power",class:11,concepts:["Work done by constant and variable force","Work-energy theorem","Conservative vs non-conservative forces","Potential energy and energy diagrams","Conservation of mechanical energy","Power and efficiency","Collision: elastic, inelastic, perfectly inelastic"],high:true},
+      {id:"p5",name:"Rotational Motion",class:11,concepts:["Centre of mass — location and motion","Linear momentum and its conservation","Torque and angular momentum","Moment of inertia — ring, disc, sphere, rod","Parallel and perpendicular axis theorems","Rolling without slipping","Angular momentum conservation"],high:true},
+      {id:"p6",name:"Gravitation",class:11,concepts:["Newton's law of gravitation","Gravitational field and potential","Escape velocity and orbital velocity","Satellites — geostationary, polar","Kepler's laws","Variation of g with height, depth, rotation"]},
+      {id:"p7",name:"Properties of Solids & Fluids",class:11,concepts:["Stress, strain, elastic moduli","Pressure in fluids","Pascal's law, Archimedes' principle","Continuity equation","Bernoulli's theorem and applications","Viscosity and Stokes' law","Surface tension and capillarity"]},
+      {id:"p8",name:"Thermodynamics & Kinetic Theory",class:11,concepts:["Zeroth and first law","Isothermal, adiabatic, isobaric, isochoric","Second law and entropy (conceptual)","Carnot engine and efficiency","Kinetic theory: pressure, temperature, RMS","Degrees of freedom and equipartition","Mean free path"]},
+      {id:"p9",name:"Oscillations (SHM)",class:11,concepts:["Conditions for SHM","Displacement, velocity, acceleration in SHM","Energy in SHM","Spring-mass systems (series, parallel)","Simple and compound pendulum","Damped and forced oscillations"]},
+      {id:"p10",name:"Waves",class:11,concepts:["Transverse vs longitudinal waves","Wave equation and wave speed","Superposition principle","Standing waves — nodes and antinodes","Resonance in strings and pipes","Beats","Doppler effect"]},
+      {id:"p11",name:"Electrostatics",class:12,concepts:["Coulomb's law and superposition","Electric field — point charge, dipole","Gauss's law and applications","Electric potential and potential energy","Conductors and capacitors","Capacitance: parallel plate, spherical, cylindrical","Dielectrics and polarization","Energy stored in capacitors"],high:true},
+      {id:"p12",name:"Current Electricity",class:12,concepts:["Drift velocity and Ohm's law","Resistance: temperature dependence, combinations","Kirchhoff's laws (KVL, KCL)","Wheatstone bridge and meter bridge","Potentiometer","RC circuits (charging/discharging)"]},
+      {id:"p13",name:"Magnetic Effects of Current",class:12,concepts:["Biot-Savart law","Ampere's circuital law","Force on moving charge (Lorentz force)","Force between parallel conductors","Torque on current loop — galvanometer","Moving coil galvanometer"]},
+      {id:"p14",name:"Magnetism & Matter",class:12,concepts:["Bar magnet and field lines","Diamagnetic, paramagnetic, ferromagnetic","Earth's magnetism"]},
+      {id:"p15",name:"Electromagnetic Induction",class:12,concepts:["Faraday's laws and Lenz's law","Motional EMF","Self and mutual inductance","Energy stored in inductor","AC generator"],high:true},
+      {id:"p16",name:"Alternating Current",class:12,concepts:["RMS and peak values","Phasors","LR, CR, LCR circuits","Resonance in LCR","Power factor","Transformers"]},
+      {id:"p17",name:"Electromagnetic Waves",class:12,concepts:["Maxwell's equations (conceptual)","EM spectrum — frequencies and applications","Properties of EM waves"]},
+      {id:"p18",name:"Ray Optics",class:12,concepts:["Reflection: plane and curved mirrors","Refraction: Snell's law, TIR","Prism: deviation and dispersion","Lenses: thin lens formula, power","Lens maker's equation","Optical instruments: microscope, telescope"]},
+      {id:"p19",name:"Wave Optics",class:12,concepts:["Huygens' principle","Young's double slit experiment (YDSE)","Diffraction: single slit","Polarization"]},
+      {id:"p20",name:"Modern Physics",class:12,concepts:["Photoelectric effect","de Broglie wavelength","Bohr's model of hydrogen atom","Nuclear binding energy and mass defect","Radioactivity: alpha, beta, gamma","Half life and decay law","Fission and fusion","Semiconductors: p-n junction, diode, transistor","Logic gates"],high:true},
+    ]
+  },
+  chem: {
+    name: "Chemistry",
+    color: "#26a69a",
+    resources: [
+      {label:"NCERT Chemistry",url:"https://ncert.nic.in/textbook.php?kech1=0-16"},
+      {label:"MS Chauhan Organic",url:"https://www.google.com/search?q=MS+Chauhan+organic+chemistry+solutions"},
+      {label:"VK Jaiswal Inorganic",url:"https://www.google.com/search?q=VK+Jaiswal+inorganic+chemistry"},
+      {label:"Vedantu Chemistry",url:"https://www.youtube.com/@VedantuJEE"},
+    ],
+    chapters: [
+      {id:"c1",name:"Basic Concepts (Mole)",class:11,concepts:["Mole concept — the most important","Stoichiometry and limiting reagent","Empirical and molecular formula","Concentration terms: molarity, molality, mole fraction"],high:true},
+      {id:"c2",name:"Atomic Structure",class:11,concepts:["Bohr's model and its limitations","Quantum numbers (n, l, m, s)","Orbital shapes and energies","Aufbau, Pauli, Hund's rules","Electronic configurations incl. exceptions (Cr, Cu)"]},
+      {id:"c3",name:"Periodic Table",class:11,concepts:["Trends: atomic radius, IE, EA, EN","Periodicity in properties","s, p, d, f block characteristics"]},
+      {id:"c4",name:"Chemical Bonding",class:11,concepts:["Ionic bonding and lattice energy","Covalent bonding and Lewis structures","VSEPR theory and molecular geometry","Hybridization: sp, sp², sp³, sp³d, sp³d²","MOT: bonding/antibonding, bond order","Hydrogen bonding and its effects","Resonance"]},
+      {id:"c5",name:"States of Matter",class:11,concepts:["Gas laws: Boyle, Charles, Gay-Lussac","Ideal gas equation","Kinetic molecular theory","Real gases: van der Waals equation","Liquefaction and critical constants"]},
+      {id:"c6",name:"Thermodynamics",class:11,concepts:["System, surroundings, state functions","First law: internal energy, enthalpy","Hess's law","Bond enthalpies","Entropy and second law","Gibbs free energy and spontaneity"]},
+      {id:"c7",name:"Equilibrium",class:11,concepts:["Law of mass action","Kc and Kp — relation and calculation","Le Chatelier's principle","Acids and bases: Arrhenius, Bronsted, Lewis","pH, pOH, buffer solutions","Solubility product (Ksp)","Common ion effect"],high:true},
+      {id:"c8",name:"Redox Reactions",class:11,concepts:["Oxidation number rules","Balancing by oxidation number and half-reaction","Disproportionation reactions"]},
+      {id:"c9",name:"Hydrogen & s-Block",class:11,concepts:["Hydrides types","Alkali metals: properties and compounds","Alkaline earth metals: properties and compounds","Important compounds: NaOH, Na₂CO₃, CaCO₃, CaO"]},
+      {id:"c10",name:"p-Block (Class 11)",class:11,concepts:["Group 13: Boron and Aluminium","Group 14: Carbon family, allotropes","Group 15: Nitrogen family, oxoacids","Group 16: Oxygen, sulphur compounds","Group 17: Halogens, interhalogen compounds","Group 18: Noble gases"]},
+      {id:"c11",name:"Organic Chemistry — Basics",class:11,concepts:["IUPAC nomenclature","Isomerism: structural and stereoisomerism","Inductive, resonance, hyperconjugation effects","Reaction intermediates: carbocation, carbanion, free radical","Types of reactions: addition, elimination, substitution"],high:true},
+      {id:"c12",name:"Hydrocarbons",class:11,concepts:["Alkanes: preparation, reactions, mechanism","Alkenes: addition reactions, Markovnikov's rule","Alkynes: acidic character, reactions","Aromatic: benzene structure, EAS mechanism"]},
+      {id:"c13",name:"Solutions",class:12,concepts:["Types of solutions","Colligative properties: VP lowering, BP elevation, FP depression, osmotic pressure","van't Hoff factor","Abnormal molar masses"]},
+      {id:"c14",name:"Electrochemistry",class:12,concepts:["Electrochemical cells: galvanic and electrolytic","EMF and standard electrode potential","Nernst equation","Faraday's laws of electrolysis","Conductance and Kohlrausch's law","Corrosion"],high:true},
+      {id:"c15",name:"Chemical Kinetics",class:12,concepts:["Rate of reaction and rate law","Order and molecularity","Integrated rate equations: zero, first order","Half life","Arrhenius equation and activation energy","Collision theory (conceptual)"]},
+      {id:"c16",name:"Surface Chemistry",class:12,concepts:["Adsorption: physisorption vs chemisorption","Catalysis types","Colloids: types, properties, Tyndall effect","Emulsions"]},
+      {id:"c17",name:"p-Block (Class 12)",class:12,concepts:["Groups 15-18 in depth","Oxoacids of P, S, Cl — structures and oxidation states","Interhalogen compounds","Xenon compounds"]},
+      {id:"c18",name:"d and f Block",class:12,concepts:["General properties of transition metals","Variable oxidation states","Complex compounds: ligands, coordination number, IUPAC naming","Crystal field theory (basic)","Lanthanides and actinides"]},
+      {id:"c19",name:"Coordination Compounds",class:12,concepts:["Werner's theory","Isomerism in complexes","Bonding: VBT and CFT basics","Stability constants"]},
+      {id:"c20",name:"Organic — Functional Groups",class:12,concepts:["Haloalkanes and haloarenes: SN1, SN2, elimination","Alcohols, phenols, ethers","Aldehydes and ketones: nucleophilic addition, named reactions","Carboxylic acids and derivatives","Amines: basicity, reactions","Biomolecules: carbohydrates, proteins, nucleic acids, vitamins","Polymers: addition and condensation"],high:true},
+      {id:"c21",name:"Named Reactions",class:12,concepts:["Aldol condensation","Cannizzaro reaction","Clemmensen reduction","Wolf-Kishner reduction","Reimer-Tiemann reaction","Kolbe reaction","Sandmeyer reaction","Gabriel synthesis","Hoffmann bromamide degradation","Friedel-Crafts alkylation and acylation"],high:true},
+    ]
+  },
+  math: {
+    name: "Mathematics",
+    color: "#ef9f27",
+    resources: [
+      {label:"RD Sharma",url:"https://www.google.com/search?q=RD+Sharma+Class+12+solutions"},
+      {label:"Cengage Maths",url:"https://www.google.com/search?q=Cengage+mathematics+JEE"},
+      {label:"Vedantu Maths",url:"https://www.youtube.com/@VedantuJEE"},
+    ],
+    chapters: [
+      {id:"m1",name:"Sets, Relations & Functions",class:11,concepts:["Set operations and Venn diagrams","Types of relations","Types of functions: injective, surjective, bijective","Composition and inverse of functions","Even/odd functions, periodic functions"]},
+      {id:"m2",name:"Trigonometry",class:11,concepts:["Trigonometric ratios and identities","Compound angle formulas","Multiple and sub-multiple angles","Transformation formulas (sum to product, product to sum)","Graphs of trig functions","Inverse trigonometric functions","Trigonometric equations — general solutions"]},
+      {id:"m3",name:"Complex Numbers",class:11,concepts:["Algebra of complex numbers","Modulus, argument, polar form","De Moivre's theorem","Cube roots of unity","Geometry of complex numbers"]},
+      {id:"m4",name:"Quadratic Equations",class:11,concepts:["Nature of roots (discriminant)","Sum and product of roots","Formation of quadratic with given roots","Common roots","Location of roots — sign of quadratic"]},
+      {id:"m5",name:"Sequences & Series",class:11,concepts:["AP: nth term, sum, AM","GP: nth term, sum, infinite GP, GM","HP and relation between AM, GM, HM","Special series: Σn, Σn², Σn³","Telescoping series"]},
+      {id:"m6",name:"Permutations & Combinations",class:11,concepts:["Fundamental counting principle","Permutations with and without repetition","Combinations","Circular permutations","Division and distribution problems"]},
+      {id:"m7",name:"Binomial Theorem",class:11,concepts:["Binomial expansion","General term and middle term","Properties of binomial coefficients","Multinomial (basic)"]},
+      {id:"m8",name:"Straight Lines",class:11,concepts:["Slope and equations of line (all forms)","Angle between lines, parallel, perpendicular","Distance from point to line","Concurrency of lines","Family of lines"],high:true},
+      {id:"m9",name:"Circles",class:11,concepts:["Standard and general equation","Tangent and normal","Chord of contact","Family of circles","Radical axis"],high:true},
+      {id:"m10",name:"Conic Sections",class:11,concepts:["Parabola: standard forms, focus, directrix, tangent","Ellipse: standard form, eccentricity, tangent","Hyperbola: standard form, asymptotes, tangent"],high:true},
+      {id:"m11",name:"Limits & Derivatives (intro)",class:11,concepts:["Concept of limit","Standard limits","L'Hôpital's rule (basic)","First principle of differentiation","Basic differentiation rules"]},
+      {id:"m12",name:"Statistics & Probability (11)",class:11,concepts:["Mean, variance, standard deviation","Classical probability","Addition and multiplication theorems","Conditional probability"]},
+      {id:"m13",name:"Matrices & Determinants",class:12,concepts:["Matrix operations","Determinant: properties and expansion","Adjoint and inverse of matrix","Cramer's rule","System of linear equations"]},
+      {id:"m14",name:"Continuity & Differentiability",class:12,concepts:["Continuity at a point and on interval","Differentiability","Chain rule","Implicit differentiation","Logarithmic differentiation","Derivatives of parametric functions","Higher order derivatives","Rolle's and Mean Value theorems"],high:true},
+      {id:"m15",name:"Applications of Derivatives",class:12,concepts:["Rate of change","Tangent and normal to curves","Increasing/decreasing functions","Maxima and minima: first and second derivative test","Approximations"],high:true},
+      {id:"m16",name:"Integrals",class:12,concepts:["Standard integrals","Substitution method","Integration by parts (ILATE)","Partial fractions","Special integrals (√(a²-x²) type)","Definite integrals: properties (King's rule etc.)","Leibniz rule"],high:true},
+      {id:"m17",name:"Applications of Integrals",class:12,concepts:["Area under curves","Area between two curves"],high:true},
+      {id:"m18",name:"Differential Equations",class:12,concepts:["Order and degree","Variable separable","Homogeneous equations","Linear first order: integrating factor","Bernoulli's equation"]},
+      {id:"m19",name:"Vectors",class:12,concepts:["Types of vectors","Dot product and cross product","Scalar triple product","Vector triple product","Collinearity and coplanarity"],high:true},
+      {id:"m20",name:"3D Geometry",class:12,concepts:["Direction cosines and ratios","Equation of line in 3D","Angle between lines","Equation of plane","Distance from point to plane","Angle between line and plane","Skew lines and shortest distance"],high:true},
+      {id:"m21",name:"Probability (Class 12)",class:12,concepts:["Conditional probability (deeper)","Bayes' theorem","Random variables and probability distributions","Binomial distribution","Mean and variance of distributions"],high:true},
+    ]
+  }
+};
+
+const RATING_COLORS = ["#ff4444","#ff7043","#ffa726","#cddc39","#66bb6a","#26a69a"];
+const RATING_LABELS = ["Not studied","Read theory","Basic problems","JEE Mains","JEE Advanced","Can teach"];
+
+// State
+let state = loadState();
+let currentTab = 'dash';
+let currentChapter = null;
+let focusOpen = false;
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('jee_state');
+    return s ? JSON.parse(s) : {ratings:{}, resources:{}, pdfs:{}, focus:[], focusDate:''};
+  } catch(e) { return {ratings:{}, resources:{}, pdfs:{}, focus:[], focusDate:''}; }
+}
+
+function saveState() {
+  localStorage.setItem('jee_state', JSON.stringify(state));
+}
+
+function getTodayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function checkFocusReset() {
+  if (state.focusDate !== getTodayStr()) {
+    state.focus = [];
+    state.focusDate = getTodayStr();
+    saveState();
+  }
+}
+
+function getRating(chId, cIdx) {
+  return (state.ratings[chId] && state.ratings[chId][cIdx] !== undefined) ? state.ratings[chId][cIdx] : 0;
+}
+
+function setRating(chId, cIdx, val) {
+  if (!state.ratings[chId]) state.ratings[chId] = {};
+  state.ratings[chId][cIdx] = val;
+  saveState();
+}
+
+function getChapterProgress(ch) {
+  const total = ch.concepts.length;
+  let at3 = 0;
+  for (let i=0; i<total; i++) {
+    if (getRating(ch.id, i) >= 3) at3++;
+  }
+  return {at3, total, pct: total ? Math.round(at3*100/total) : 0};
+}
+
+function getAllStats() {
+  let totalC=0, total3=0;
+  const subj = {};
+  const dist = [0,0,0,0,0,0];
+  for (const sk of ['phy','chem','math']) {
+    let sc=0, s3=0;
+    for (const ch of DATA[sk].chapters) {
+      for (let i=0; i<ch.concepts.length; i++) {
+        totalC++; sc++;
+        const r = getRating(ch.id, i);
+        dist[r]++;
+        if (r>=3) { total3++; s3++; }
+      }
+    }
+    subj[sk] = {pct: sc ? Math.round(s3*100/sc) : 0, at3:s3, total:sc};
+  }
+  return {total3, totalC, pct: totalC ? Math.round(total3*100/totalC) : 0, subj, dist};
+}
+
+// Tab switching
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach((b,i)=>{
+    b.classList.toggle('active', ['dash','phy','chem','math'][i]===tab);
+  });
+  render();
+}
+
+function render() {
+  const c = document.getElementById('main-content');
+  if (currentTab==='dash') c.innerHTML = renderDash();
+  else c.innerHTML = renderSubject(currentTab);
+  renderFocusWidget();
+}
+
+function renderDash() {
+  checkFocusReset();
+  const stats = getAllStats();
+  const focusPins = state.focus.filter(Boolean);
+  let focusHtml = '';
+  if (focusPins.length) {
+    focusHtml = `<div class="mastery-dist" style="border-color:#3d3875">
+      <h3 style="color:#a99ff0">📌 Today's Pinned Concepts</h3>
+      ${focusPins.map(f=>`<div class="dist-row"><span style="font-size:12px;color:var(--text)">${f.chName} — ${f.concept}</span></div>`).join('')}
+    </div>`;
+  }
+  const subColors = {phy:'#6c63ff',chem:'#26a69a',math:'#ef9f27'};
+  const subNames = {phy:'Physics',chem:'Chemistry',math:'Mathematics'};
+  const distItems = RATING_LABELS.map((l,i)=>`
+    <div class="dist-row">
+      <div class="dist-dot" style="background:${RATING_COLORS[i]}"></div>
+      <div class="dist-label">${l}</div>
+      <div class="dist-bar"><div class="dist-fill" style="background:${RATING_COLORS[i]};width:${stats.totalC?Math.round(stats.dist[i]*100/stats.totalC):0}%"></div></div>
+      <div class="dist-count">${stats.dist[i]}</div>
+    </div>`).join('');
+  return `
+  ${focusHtml}
+  <div class="dash-grid">
+    <div class="stat-card">
+      <div class="stat-label">Overall Progress</div>
+      <div class="stat-val">${stats.pct}%</div>
+      <div class="stat-sub">${stats.total3} / ${stats.totalC} concepts at 3+</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${stats.pct}%;background:${stats.pct>=70?'#66bb6a':stats.pct>=30?'#ffa726':'#ff4444'}"></div></div>
+    </div>
+    ${['phy','chem','math'].map(sk=>`
+    <div class="stat-card">
+      <div class="stat-label">${subNames[sk]}</div>
+      <div class="stat-val" style="color:${subColors[sk]}">${stats.subj[sk].pct}%</div>
+      <div class="stat-sub">${stats.subj[sk].at3} / ${stats.subj[sk].total} concepts</div>
+      <div class="prog-bar"><div class="prog-fill" style="width:${stats.subj[sk].pct}%;background:${subColors[sk]}"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="subj-bars">
+    <h3>Subject Progress</h3>
+    ${['phy','chem','math'].map(sk=>`
+    <div class="subj-row">
+      <div class="subj-row-hd"><span>${subNames[sk]}</span><span style="color:${subColors[sk]}">${stats.subj[sk].pct}%</span></div>
+      <div class="prog-bar" style="height:10px"><div class="prog-fill" style="width:${stats.subj[sk].pct}%;background:${subColors[sk]}"></div></div>
+    </div>`).join('')}
+  </div>
+  <div class="mastery-dist">
+    <h3>Mastery Distribution</h3>
+    ${distItems}
+  </div>
+  <div style="text-align:center;color:var(--muted);font-size:12px;padding:8px 0 20px">
+    💡 PYQs are the closest thing to a cheat code JEE has. Solve them after every chapter.
+  </div>`;
+}
+
+function renderSubject(sk) {
+  const subj = DATA[sk];
+  const cls11 = subj.chapters.filter(c=>c.class===11);
+  const cls12 = subj.chapters.filter(c=>c.class===12);
+  const renderCards = (chs) => chs.map(ch => {
+    const p = getChapterProgress(ch);
+    const color = p.pct>=70?'#66bb6a':p.pct>=30?'#ffa726':'#ff4444';
+    const hasPdf = !!state.pdfs[ch.id];
+    const pyqUrl = `https://www.google.com/search?q=JEE+PYQ+${encodeURIComponent(ch.name)}`;
+    return `<div class="ch-card" onclick="openChapter('${sk}','${ch.id}')">
+      <div class="ch-card-top">
+        <div class="ch-name">${ch.high?'⭐ ':''}${ch.name}</div>
+        <div class="ch-badges">
+          ${hasPdf?`<span class="badge badge-pdf">📎</span>`:''}
+          <span class="badge badge-class">C${ch.class}</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${ch.concepts.length} concepts</div>
+      <div class="ch-prog-row">
+        <div class="ch-prog-bar"><div class="ch-prog-fill" style="width:${p.pct}%;background:${color}"></div></div>
+        <div class="ch-prog-pct" style="color:${color}">${p.pct}%</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="class-header">Class 11</div>
+    <div class="ch-grid">${renderCards(cls11)}</div>
+    <div class="class-header">Class 12</div>
+    <div class="ch-grid">${renderCards(cls12)}</div>
+  `;
+}
+
+function openChapter(sk, chId) {
+  const subj = DATA[sk];
+  const ch = subj.chapters.find(c=>c.id===chId);
+  currentChapter = {sk, ch};
+  const sb = document.getElementById('sidebar');
+  sb.innerHTML = buildSidebar(sk, ch);
+  document.getElementById('overlay').classList.add('open');
+}
+
+function buildSidebar(sk, ch) {
+  const subj = DATA[sk];
+  const pyqUrl = `https://www.google.com/search?q=JEE+PYQ+${encodeURIComponent(ch.name)}`;
+  const p = getChapterProgress(ch);
+  const color = p.pct>=70?'#66bb6a':p.pct>=30?'#ffa726':'#ff4444';
+
+  // Concepts
+  const conceptsHtml = ch.concepts.map((con,i)=>{
+    const r = getRating(ch.id, i);
+    const isPinned = state.focus.some(f=>f&&f.chId===ch.id&&f.cIdx===i);
+    const btns = RATING_COLORS.map((c,v)=>`<button class="r-btn ${r===v?'active':''}" style="background:${c};color:#fff" onclick="doRate('${ch.id}',${i},${v})" title="${RATING_LABELS[v]}">${v}</button>`).join('');
+    return `<div class="concept-row" id="con-${ch.id}-${i}">
+      <div class="concept-name">${con}</div>
+      <button class="pin-btn ${isPinned?'pinned':''}" title="${isPinned?'Unpin':'Pin to Today'}" onclick="togglePin('${sk}','${ch.id}',${i},'${con.replace(/'/g,"\\'")}','${ch.name.replace(/'/g,"\\'")}')">📌</button>
+      <div class="rating-sel">${btns}</div>
+    </div>`;
+  }).join('');
+
+
+
+  // Resources
+  const chRes = state.resources[ch.id] || [];
+  const baseRes = [
+    ...subj.resources,
+    {label:`PYQs — ${ch.name}`, url:pyqUrl}
+  ];
+  const allRes = [...baseRes, ...chRes];
+  const resListHtml = allRes.map((r,i)=>{
+    const isCustom = i >= baseRes.length;
+    return `<li class="res-item">
+      <span class="res-icon">🔗</span>
+      <a class="res-label" href="${r.url}" target="_blank">${r.label}</a>
+      ${isCustom?`<button class="res-del" onclick="removeRes('${ch.id}',${i-baseRes.length})">✕</button>`:''}
+    </li>`;
+  }).join('');
+
+  const addResHtml = `<div class="add-res">
+    <input id="res-label-${ch.id}" placeholder="Label" style="width:100px">
+    <input id="res-url-${ch.id}" placeholder="https://...">
+    <button class="btn-sm" onclick="addRes('${ch.id}')">Add</button>
+  </div>`;
+
+  return `
+  <div class="sb-header">
+    <button class="sb-close" onclick="closeSidebar()">✕</button>
+    <div class="sb-title">${ch.high?'⭐ ':''}${ch.name}</div>
+    <div class="sb-sub">Class ${ch.class} • ${subj.name} • ${p.at3}/${p.total} concepts at 3+
+      <span style="color:${color};margin-left:6px">${p.pct}%</span></div>
+    <div class="prog-bar" style="margin-top:8px"><div class="prog-fill" style="width:${p.pct}%;background:${color}"></div></div>
+  </div>
+  <div class="sb-body">
+    <div class="sb-section">
+      <div class="sb-section-title">Concept Mastery</div>
+      ${conceptsHtml}
+    </div>
+    <div class="sb-section">
+      <div class="collapsible open" onclick="toggleRes(this)" id="res-toggle-${ch.id}">
+        <span class="arrow">▶</span>
+        <span class="sb-section-title" style="margin-bottom:0">Resources</span>
+      </div>
+      <div id="res-body-${ch.id}" style="margin-top:12px">
+        <ul class="res-list">${resListHtml}</ul>
+        ${addResHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeSidebar(e) {
+  if (e && e.target !== document.getElementById('overlay')) return;
+  if (!e) {
+    document.getElementById('overlay').classList.remove('open');
+    render();
+  } else if (e.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.remove('open');
+    render();
+  }
+}
+
+function doRate(chId, cIdx, val) {
+  const cur = getRating(chId, cIdx);
+  setRating(chId, cIdx, cur===val?0:val);
+  if (currentChapter) {
+    const {sk,ch} = currentChapter;
+    const sb = document.getElementById('sidebar');
+    sb.innerHTML = buildSidebar(sk, ch);
+    updateChCard(ch);
+  }
+}
+
+function updateChCard(ch) {
+  // update progress bar in card if visible
+}
+
+
+
+function addRes(chId) {
+  const label = document.getElementById('res-label-'+chId).value.trim();
+  const url = document.getElementById('res-url-'+chId).value.trim();
+  if (!label || !url) { alert('Enter both label and URL'); return; }
+  if (!state.resources[chId]) state.resources[chId] = [];
+  state.resources[chId].push({label, url});
+  saveState();
+  if (currentChapter) {
+    const {sk,ch} = currentChapter;
+    document.getElementById('sidebar').innerHTML = buildSidebar(sk, ch);
+  }
+}
+
+function removeRes(chId, idx) {
+  if (state.resources[chId]) {
+    state.resources[chId].splice(idx, 1);
+    saveState();
+    if (currentChapter) {
+      const {sk,ch} = currentChapter;
+      document.getElementById('sidebar').innerHTML = buildSidebar(sk, ch);
+    }
+  }
+}
+
+function toggleRes(el) {
+  el.classList.toggle('open');
+  const chId = el.id.replace('res-toggle-','');
+  const body = document.getElementById('res-body-'+chId);
+  body.style.display = el.classList.contains('open') ? 'block' : 'none';
+}
+
+// Today's Focus
+function togglePin(sk, chId, cIdx, concept, chName) {
+  checkFocusReset();
+  const idx = state.focus.findIndex(f=>f&&f.chId===chId&&f.cIdx===cIdx);
+  if (idx>=0) {
+    state.focus.splice(idx,1);
+  } else {
+    if (state.focus.length>=3) { alert("Max 3 pins per day!"); return; }
+    state.focus.push({sk, chId, cIdx, concept, chName});
+  }
+  saveState();
+  if (currentChapter) {
+    const {sk: s, ch} = currentChapter;
+    document.getElementById('sidebar').innerHTML = buildSidebar(s, ch);
+  }
+  renderFocusWidget();
+}
+
+function renderFocusWidget() {
+  checkFocusReset();
+  const body = document.getElementById('focus-body');
+  const pins = state.focus.filter(Boolean);
+  let html = '';
+  for (let i=0; i<3; i++) {
+    const p = pins[i];
+    if (p) {
+      html += `<div class="focus-item">
+        <span style="font-size:16px">${['1️⃣','2️⃣','3️⃣'][i]}</span>
+        <span class="focus-item-text">${p.chName}: ${p.concept}</span>
+        <button class="focus-unpin" onclick="togglePin('${p.sk}','${p.chId}',${p.cIdx},'','')">✕</button>
+      </div>`;
+    } else {
+      html += `<div class="focus-item"><span style="font-size:16px;opacity:.3">${['1️⃣','2️⃣','3️⃣'][i]}</span><span class="focus-item-text empty">Not set</span></div>`;
+    }
+  }
+  html += `<div class="focus-hint">Pin concepts using the 📌 button inside any chapter. Resets at midnight.</div>`;
+  body.innerHTML = html;
+}
+
+function toggleFocus() {
+  focusOpen = !focusOpen;
+  document.getElementById('focus-body').classList.toggle('open', focusOpen);
+  document.getElementById('focus-chevron').textContent = focusOpen ? '▲' : '▼';
+}
+
+// Export
+function exportProgress() {
+  const out = {
+    exportDate: new Date().toISOString(),
+    ratings: state.ratings,
+    resources: state.resources,
+    focus: state.focus,
+    summary: getAllStats()
+  };
+  const blob = new Blob([JSON.stringify(out, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `jee-progress-${getTodayStr()}.json`;
+  a.click();
+}
+
+// Init
+checkFocusReset();
+render();
+renderFocusWidget();
+</script>
+</body>
+</html>
